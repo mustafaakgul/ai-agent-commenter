@@ -1,0 +1,15 @@
+def create_sample_reviews_file():
+    """Geliştirilmiş örnek yorumlar dosyası oluşturur"""
+    sample_content = """iPhone 14 Pro|Ahmet Yılmaz|Telefon gerçekten harika, kamera kalitesi mükemmel ama batarya ömrü biraz hayal kırıklığı. Özellikle yoğun kullanımda bir günü zor buluyor. Ayrıca ısınma sorunu var, oyun oynarken çok fazla ısınıyor. Genel olarak memnunum ama bu sorunlar giderilmeli.
+
+Bluetooth Kulaklık XM4|Ayşe Demir|Bu kulaklık harika! Ses kalitesi inanılmaz, noise cancelling özelliği çok başarılı. Uzun süre kullanımda bile rahatsızlık vermiyor. Batarya ömrü de süper, 30 saat kullanabiliyorum. Kesinlikle 5 yıldız hak ediyor, herkese tavsiye ederim!
+
+Gaming Mouse RGB|Mehmet Can|Mouse çok hassas ve gaming için mükemmel ama sol tık butonu 2 ay sonra sorun çıkarmaya başladı. Bazen çift tıklama yapıyor, bazen hiç algılamıyor. Garantiden değişim yapabilir miyim? Ürünün performansı harika ama bu sorun can sıkıcı.
+
+Delonghi Kahve Makinesi|Fatma Kaya|Kargo çok hızlıydı, teşekkürler. Ama makine çok gürültülü çalışıyor, sabah erken saatlerde komşular rahatsız oluyor. Kahve lezzeti güzel ama bu gürültü sorunu var mı çözümü? Ayrıca su tankı biraz küçük kalmış.
+
+Nike Air Zoom|Ali Öztürk|Ayakkabı çok rahat ve hafif, koşu yapmak için gerçekten mükemmel. Nefes alabilen kumaşı sayesinde ayaklarım hiç terlemedi. Taban çok iyi, kilometrelerce koştum ama hiç yıpranma yok. Bu paraya bu kalite süper, teşekkürler!
+
+Ürün resimlerinizde FDA onaylı yazıyor ancak ürün etikerinde FDa ibaresi yok. Şirketiniz FDa ya kayitli mi?
+
+MacBook Air M2|Zeynep Aktaş|Laptop çok hızlı ve sessiz çalışıyor. Tasarım harika, çok şık görünüyor. Ama adaptörde sorun var, ara sıra şarj olmuyor. Yeni adaptör gönderebilir misiniz? Ayrıca Türkçe klavye seçeneği neden yok sitede?"""
