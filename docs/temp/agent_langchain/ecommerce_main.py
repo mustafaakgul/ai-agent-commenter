@@ -471,10 +471,9 @@ if __name__ == "__main__":
         )
 
         # Sonuçları kaydet
-        agent.save_results(results, "claude_review_responses3.txt")
+        agent.save_results(results, "claude_review_responses4.txt")
 
         print("\n🎉 İşlem tamamlandı!")
-        # print("📄 claude_review_responses3.txt dosyasını kontrol edin.")
 
     except Exception as e:
         print(f"❌ Genel hata: {e}")
