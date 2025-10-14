@@ -329,7 +329,7 @@ class ECommerceReviewAgent:
 
         return results
 
-    def save_results(self, id: int, results: List[Dict], output_file: str = "review_responses.txt"):
+    def save_results(self, id: int, results: List[Dict]):
         try:
             comment = Comment.objects.get(id=id)
             result = results[0]
@@ -399,6 +399,6 @@ def execute(id, content):
         )
 
         # Save Results
-        agent.save_results(id, results, "claude_review_responses3.txt")
+        agent.save_results(id, results)
     except Exception as e:
         print(f"Error: {e}")
