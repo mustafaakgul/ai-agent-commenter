@@ -49,3 +49,21 @@ class CommentAnalyzer(BaseModel):
     class Meta:
         verbose_name = "Comment Analyzer"
         verbose_name_plural = "Comment Analyzers"
+
+
+class CommentQualityScore(BaseModel):
+    comment = models.OneToOneField(Comment, on_delete=models.CASCADE, related_name="quality_score")
+    professionalism = models.IntegerField()  # Profesyonellik puanı
+    relevance = models.IntegerField()        # Uygunluk puanı
+    warmth = models.IntegerField()           # Samimiyet puanı
+    solution_focus = models.IntegerField()   # Çözüm odaklılık puanı
+    overall = models.IntegerField()          # Genel puan
+    feedback = models.TextField(blank=True)  # Geri bildirim metni
+    approved = models.BooleanField(default=False)  # Onay durumu
+
+    def __str__(self):
+        return f"Quality score for comment {self.comment.id}"
+
+    class Meta:
+        verbose_name = "Comment Quality Score"
+        verbose_name_plural = "Comment Quality Scores"

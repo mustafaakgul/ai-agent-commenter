@@ -10,15 +10,13 @@ from langchain.memory import ConversationBufferMemory
 from typing import List, Dict
 from datetime import datetime, timezone
 
-from app.comment.models import Comment, CommentAnalyzer
-
+from app.comment.models import Comment, CommentAnalyzer, CommentQualityScore
 
 load_dotenv()
 
-
 class ECommerceReviewAgent:
     def __init__(self, anthropic_api_key: str = None, model_name: str = "claude-3-sonnet-20240229"):
-        """E-ticaret yorum cevaplama agent'ini Claude ile başlatır"""
+        """Initializes the Claude agent for e-commerce review responses."""
         self.llm = ChatAnthropic(
             model=model_name,
             anthropic_api_key=anthropic_api_key or os.getenv("ANTHROPIC_API_KEY"),
@@ -30,9 +28,9 @@ class ECommerceReviewAgent:
         self.setup_chains()
 
     def setup_prompts(self):
-        """Prompt şablonlarını ayarlar"""
+        """Sets up prompt templates."""
 
-        # Yorum analiz prompt'u
+        # Review analysis prompt
         self.analysis_prompt = ChatPromptTemplate.from_messages([
             ("system", """Sen bir e-ticaret uzmanısın. Ürün yorumlarını analiz ediyorsun. 
             Her yorum için JSON formatında analiz yapacaksın."""),
@@ -56,7 +54,7 @@ class ECommerceReviewAgent:
             Sadece JSON formatında cevap ver, başka açıklama ekleme.""")
         ])
 
-        # Cevap üretme prompt'u
+        # Response generation prompt
         self.response_prompt = ChatPromptTemplate.from_messages([
             ("system", """Sen Türkiye'nin en büyük e-ticaret sitelerinden birinin profesyonel müşteri temsilcisisin.
 
@@ -86,9 +84,9 @@ class ECommerceReviewAgent:
             Bu bilgilere dayanarak müşteriye uygun bir cevap yaz. Müşterinin durumuna göre ton ve içeriği ayarla.""")
         ])
 
-        # Kalite kontrol prompt'u
+        # Quality control prompt
         self.quality_check_prompt = ChatPromptTemplate.from_messages([
-            ("system", """Sen bir müşteri hizmetleri kalite kontrolcüsüsün. 
+            ("system", """Sen bir müşteri hizmetleri kalite kontrolcüsüsün.
             Müşteri temsilcilerinin yazdığı cevapları değerlendiriyorsun."""),
             ("human", """Orijinal Yorum: {review}
 
@@ -96,7 +94,7 @@ class ECommerceReviewAgent:
 
             Bu cevabı değerlendir:
             1. Profesyonellik (1-10)
-            2. Uygunluk (1-10) 
+            2. Uygunluk (1-10)
             3. Samimilik (1-10)
             4. Çözüm odaklılık (1-10)
             5. Genel puan (1-10)
@@ -116,7 +114,7 @@ class ECommerceReviewAgent:
         ])
 
     def setup_chains(self):
-        """LangChain zincirlerini ayarlar"""
+        """Sets up LangChain chains."""
         self.analysis_chain = LLMChain(
             llm=self.llm,
             prompt=self.analysis_prompt,
@@ -135,31 +133,20 @@ class ECommerceReviewAgent:
             verbose=False
         )
 
-        """
-          # 3. SEQUENTIAL CHAIN - İki chain'i sırayla çalıştır
-        self.full_chain = SequentialChain(
-            chains=[self.analysis_chain, self.response_chain],
-            input_variables=["comment"],
-            output_variables=["analysis_result", "generated_response"],
-            verbose=True
-        )
-        """
-
     def load_reviews_from_text(self, content: str) -> List[Dict]:
         reviews = []
 
         try:
-            content = content
             blocks = content.split('\n\n')
-
             review_id = 1
+
             for block in blocks:
                 lines = [line.strip() for line in block.split('\n') if line.strip()]
 
                 if len(lines) == 0:
                     continue
 
-                # Format 1: "Ürün|Müşteri|Yorum"
+                # Format 1: "Product|Customer|Review"
                 if '|' in lines[0] and lines[0].count('|') >= 2:
                     parts = lines[0].split('|')
                     reviews.append({
@@ -170,8 +157,7 @@ class ECommerceReviewAgent:
                         'date': datetime.now().strftime('%Y-%m-%d'),
                         'rating': self.extract_rating('|'.join(parts[3:]) if len(parts) > 3 else "")
                     })
-
-                # Format 2: Çok satırlı format
+                # Format 2: Multi-line format
                 elif len(lines) >= 3:
                     product = lines[0].replace('Ürün:', '').strip()
                     customer = lines[1].replace('Müşteri:', '').strip()
@@ -185,32 +171,30 @@ class ECommerceReviewAgent:
                         'date': datetime.now().strftime('%Y-%m-%d'),
                         'rating': self.extract_rating(review)
                     })
-
-                # Format 3: Sadece yorum
+                # Format 3: Only review
                 else:
                     reviews.append({
                         'id': review_id,
-                        'product': 'Belirtilmemiş',
-                        'customer': 'Anonim Müşteri',
+                        'product': 'Not specified',
+                        'customer': 'Anonymous Customer',
                         'review': ' '.join(lines),
                         'date': datetime.now().strftime('%Y-%m-%d'),
                         'rating': self.extract_rating(' '.join(lines))
                     })
 
                 review_id += 1
-
         except Exception as e:
             print(f"Error: {e}")
 
         return reviews
 
     def extract_rating(self, text: str) -> int:
-        """Metinden yıldız puanı çıkarmaya çalışır"""
+        """Attempts to extract star rating from text."""
         rating_patterns = [
             r'(\d+)\s*yıldız',
             r'(\d+)\s*/\s*5',
             r'(\d+)\s*/\s*10',
-            r'⭐' * 5,  # Yıldız emoji sayısı
+            r'⭐' * 5,
         ]
 
         for pattern in rating_patterns:
@@ -218,84 +202,73 @@ class ECommerceReviewAgent:
             if match:
                 return int(match.group(1))
 
-        # Emoji yıldızları say
         star_count = text.count('⭐')
         if star_count > 0:
             return min(star_count, 5)
-
-        return 0  # Puan bulunamadı
+        return 0
 
     def analyze_review(self, review: str) -> Dict:
-        """Yorumu Claude ile analiz eder"""
+        """Analyzes the review using Claude."""
         try:
-            print("🔍 Yorum analiz ediliyor...")
             analysis_result = self.analysis_chain.run(review=review)
 
-            # JSON parsing yap
             try:
-                # Bazen Claude extra açıklama ekleyebilir, sadece JSON kısmını al
                 json_start = analysis_result.find('{')
                 json_end = analysis_result.rfind('}') + 1
                 if json_start != -1 and json_end != -1:
                     json_str = analysis_result[json_start:json_end]
                     analysis = json.loads(json_str)
                 else:
-                    raise ValueError("JSON bulunamadı")
-
+                    raise ValueError("JSON not found")
             except (json.JSONDecodeError, ValueError) as e:
-                print(f"⚠️ JSON parse hatası, varsayılan analiz kullanılıyor: {e}")
+                print(f"⚠️ JSON parse error, using default analysis: {e}")
                 analysis = {
-                    "sentiment": "nötr",
+                    "sentiment": "neutral",
                     "sentiment_score": 5,
-                    "category": "genel",
-                    "urgency": "orta",
-                    "keywords": ["müşteri", "yorumu"],
+                    "category": "general",
+                    "urgency": "medium",
+                    "keywords": ["customer", "review"],
                     "summary": review[:100] + "..." if len(review) > 100 else review,
-                    "main_issues": ["analiz edilemedi"],
+                    "main_issues": ["could not analyze"],
                     "requires_action": True,
-                    "response_tone": "samimi"
+                    "response_tone": "friendly"
                 }
 
             return analysis
 
         except Exception as e:
-            print(f"❌ Analiz hatası: {e}")
+            print(f"❌ Analysis error: {e}")
             return {"error": str(e)}
 
     def generate_response(self, review_data: Dict, analysis: Dict) -> str:
-        """Yorum için Claude ile cevap üretir"""
+        """Generates a response for the review using Claude."""
         try:
-            print("✍️ Cevap üretiliyor...")
-
             response = self.response_chain.run(
                 customer_name=review_data['customer'],
                 product_name=review_data['product'],
                 review=review_data['review'],
                 analysis=json.dumps(analysis, ensure_ascii=False, indent=2)
             )
-
             return response.strip()
 
         except Exception as e:
-            print(f"❌ Cevap üretme hatası: {e}")
+            print(f"❌ Response generation error: {e}")
             return """Değerli müşterimiz,
 
-            Yorumunuz için teşekkür ederiz. Şu anda sistemimizde geçici bir sorun yaşanmaktadır. 
+            Yorumunuz için teşekkür ederiz. Şu anda sistemimizde geçici bir sorun yaşanmaktadır.
             Lütfen daha sonra tekrar deneyin veya müşteri hizmetlerimizle iletişime geçin.
 
             Saygılarımızla,
             Müşteri Hizmetleri"""
 
     def quality_check(self, review: str, response: str) -> Dict:
-        """Üretilen cevabın kalitesini kontrol eder"""
+        """Checks the quality of the generated response."""
         try:
-            print("🔍 Kalite kontrolü yapılıyor...")
             quality_result = self.quality_chain.run(
                 review=review,
                 response=response
             )
 
-            # JSON parsing
             try:
                 json_start = quality_result.find('{')
                 json_end = quality_result.rfind('}') + 1
@@ -303,7 +276,7 @@ class ECommerceReviewAgent:
                     json_str = quality_result[json_start:json_end]
                     quality = json.loads(json_str)
                 else:
-                    raise ValueError("JSON bulunamadı")
+                    raise ValueError("JSON not found")
             except:
                 quality = {
                     "scores": {
@@ -313,37 +286,27 @@ class ECommerceReviewAgent:
                         "solution_focus": 7,
                         "overall": 7
                     },
-                    "feedback": "Kalite kontrolü yapılamadı",
+                    "feedback": "Quality check could not be performed",
                     "approved": True
                 }
 
             return quality
-
         except Exception as e:
-            print(f"⚠️ Kalite kontrol hatası: {e}")
+            print(f"⚠️ Quality check error: {e}")
             return {"error": str(e)}
 
     def process_all_reviews(self, content: str, enable_quality_check: bool = True) -> List[Dict]:
-        """Process All Reviews and Generate Responses"""
+        """Processes all reviews and generates responses."""
         reviews = self.load_reviews_from_text(content)
         results = []
 
-        print(f"🚀 Toplam {len(reviews)} yorum işleniyor...\n")
-
         for i, review_data in enumerate(reviews, 1):
-            print(f"📝 İşleniyor {i}/{len(reviews)}: {review_data['customer']}")
-            print(f"📦 Ürün: {review_data['product']}")
-            print(f"💬 Yorum: {review_data['review'][:100]}{'...' if len(review_data['review']) > 100 else ''}")
-
-            # Yorumu analiz et
             analysis = self.analyze_review(review_data['review'])
 
             if 'error' not in analysis:
-                # Cevap üret
                 response = self.generate_response(review_data, analysis)
-
-                # Kalite kontrolü (opsiyonel)
                 quality = {}
+
                 if enable_quality_check:
                     quality = self.quality_check(review_data['review'], response)
 
@@ -358,13 +321,11 @@ class ECommerceReviewAgent:
                 result = {
                     'original': review_data,
                     'analysis': analysis,
-                    'generated_response': "Analiz hatası nedeniyle cevap üretilemedi.",
+                    'generated_response': "Response could not be generated due to analysis error.",
                     'quality_check': {},
                     'processed_at': datetime.now().isoformat()
                 }
-
             results.append(result)
-            print("✅ Tamamlandı\n" + "-" * 50 + "\n")
 
         return results
 
@@ -379,85 +340,47 @@ class ECommerceReviewAgent:
 
             # Update Comment Model
             comment.response = response
-            comment.status = "WAITING_FOR_APPROVE"  # AGENT_STATUS enum'undan uygun değeri kullanın
+            comment.status = "WAITING_FOR_APPROVE"
             comment.save()
+
+            # Customer original['customer']
+            # Product original['product']
+            # Rating original.get('rating', 'N/A')
+            # Date original['date']
+            # Comment original['review']
+            # Emotion/Sentiment analysis['sentiment'] (analysis['sentiment_score']/10)
 
             # Create CommentAnalyzer
             analyzer = CommentAnalyzer(
                 comment=comment,
-                analyzed_at=timezone.now(),
-                sentiment=analysis.get('sentiment', 'nötr'),
-                sentiment_score=analysis.get('sentiment_score', 5.0),
-                category=analysis.get('category', 'genel'),
-                urgency=analysis.get('urgency', 'orta'),
+                analyzed_at=datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                sentiment=analysis.get('sentiment', 'N/A'),
+                sentiment_score=analysis.get('sentiment_score', 'N/A'),
+                category=analysis.get('category', 'N/A'),
+                urgency=analysis.get('urgency', 'N/A'),
                 keywords=','.join(analysis.get('keywords', [])),
                 summary=analysis.get('summary', ''),
                 main_issue=','.join(analysis.get('main_issues', [])),
                 required_action=analysis.get('requires_action', False),
-                response_tone=analysis.get('tone', 'profesyonel'),
+                response_tone=analysis.get('tone', 'professional'),
                 response=response,
                 quality_control=str(quality.get('scores', {})) if quality else ''
             )
             analyzer.save()
-
-            with open(output_file, 'w', encoding='utf-8') as file:
-                file.write("🛒 E-TİCARET YORUM CEVAPLARI - CLAUDE AI\n")
-                file.write("=" * 60 + "\n")
-                file.write(f"📅 Tarih: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-                file.write(f"📊 Toplam İşlenen Yorum: {len(results)}\n")
-                file.write("=" * 60 + "\n\n")
-
-                for i, result in enumerate(results, 1):
-                    original = result['original']
-                    analysis = result['analysis']
-                    response = result['generated_response']
-                    quality = result.get('quality_check', {})
-
-                    file.write(f"📝 YORUM #{i}\n")
-                    file.write("─" * 40 + "\n")
-                    file.write(f"👤 Müşteri: {original['customer']}\n")
-                    file.write(f"📦 Ürün: {original['product']}\n")
-                    file.write(f"⭐ Puan: {original.get('rating', 'N/A')}\n")
-                    file.write(f"📅 Tarih: {original['date']}\n\n")
-
-                    file.write("💬 ORİJİNAL YORUM:\n")
-                    file.write(f"{original['review']}\n\n")
-
-                    if 'error' not in analysis:
-                        file.write("🔍 ANALİZ:\n")
-                        file.write(
-                            f"• Duygu: {analysis.get('sentiment', 'N/A')} ({analysis.get('sentiment_score', 'N/A')}/10)\n")
-                        file.write(f"• Kategori: {analysis.get('category', 'N/A')}\n")
-                        file.write(f"• Aciliyet: {analysis.get('urgency', 'N/A')}\n")
-                        file.write(f"• Anahtar Kelimeler: {', '.join(analysis.get('keywords', []))}\n")
-                        file.write(f"• Özet: {analysis.get('summary', 'N/A')}\n")
-                        file.write(f"• Ana Sorunlar: {', '.join(analysis.get('main_issues', []))}\n")
-                        file.write(
-                            f"• Aksiyon Gerekli: {'Evet' if analysis.get('requires_action', False) else 'Hayır'}\n\n")
-
-                    file.write("✍️ ÜRETİLEN CEVAP:\n")
-                    file.write(f"{response}\n\n")
-
-                    if quality and 'scores' in quality:
-                        file.write("🏆 KALİTE PUANI:\n")
-                        scores = quality['scores']
-                        file.write(f"• Profesyonellik: {scores.get('professionalism', 'N/A')}/10\n")
-                        file.write(f"• Uygunluk: {scores.get('relevance', 'N/A')}/10\n")
-                        file.write(f"• Samimilik: {scores.get('warmth', 'N/A')}/10\n")
-                        file.write(f"• Çözüm Odaklılık: {scores.get('solution_focus', 'N/A')}/10\n")
-                        file.write(f"• Genel Puan: {scores.get('overall', 'N/A')}/10\n")
-                        file.write(f"• Onaylandı: {'✅ Evet' if quality.get('approved', False) else '❌ Hayır'}\n")
-                        if quality.get('feedback'):
-                            file.write(f"• Geri Bildirim: {quality['feedback']}\n")
-                        file.write("\n")
-
-                    file.write("=" * 60 + "\n\n")
-
-            print(f"✅ Sonuçlar {output_file} dosyasına kaydedildi.")
-
+            if quality and 'scores' in quality:
+                scores = quality['scores']
+                CommentQualityScore.objects.create(
+                    comment=comment,
+                    professionalism=scores.get('professionalism', 0),
+                    relevance=scores.get('relevance', 0),
+                    warmth=scores.get('warmth', 0),
+                    solution_focus=scores.get('solution_focus', 0),
+                    overall=scores.get('overall', 0),
+                    feedback=quality.get('feedback', ''),
+                    approved=quality.get('approved', False)
+                )
         except Exception as e:
-            print(f"❌ Dosya kaydetme hatası: {e}")
-
+            print(f"❌ Error while saving results: {e}")
 
 def execute(id, content):
     API_KEY = os.getenv("ANTHROPIC_API_KEY")
@@ -477,6 +400,5 @@ def execute(id, content):
 
         # Save Results
         agent.save_results(id, results, "claude_review_responses3.txt")
-
     except Exception as e:
         print(f"Error: {e}")
