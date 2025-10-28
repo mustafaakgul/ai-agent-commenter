@@ -1,5 +1,5 @@
 from django.urls import path
-from app.comment.api.views import CommentAPIView, ApprovedCommentsAPIView
+from app.comment.api.views import CommentAPIView, ApprovedCommentsAPIView, UpdateAnsweredCommentsAPIView
 
 
 app_name = 'comment'
@@ -7,5 +7,6 @@ app_name = 'comment'
 
 urlpatterns = [
     path('', CommentAPIView.as_view(), name='tasks'),
-    path('status/approved/', ApprovedCommentsAPIView.as_view(), name='approved_comments'),
+    path('status/approved', ApprovedCommentsAPIView.as_view(), name='approved_comments'),
+    path('update/answered', UpdateAnsweredCommentsAPIView.as_view(), name='update_answered_comments'),
 ]

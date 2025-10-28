@@ -62,3 +62,48 @@ class ApprovedCommentsAPIView(APIView):
         }
         response = Response(data=resp, status=status.HTTP_200_OK)
         return response
+
+
+class UpdateAnsweredCommentsAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        comment_id = request.data.get('id')
+        comment_status = request.data.get('status')
+
+        if not comment_id:
+            resp = {
+                'status': 'false',
+                'message': 'Comment ID is required',
+                'payload': {}
+            }
+            return Response(data=resp, status=status.HTTP_400_BAD_REQUEST)
+
+        if not comment_status:
+            resp = {
+                'status': 'false',
+                'message': 'Status is required',
+                'payload': {}
+            }
+            return Response(data=resp, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            comment = Comment.objects.get(id=comment_id)
+            comment.status = comment_status
+            comment.save()
+
+            serializer = CommentListSerializer(comment)
+            resp = {
+                'status': 'true',
+                'message': 'Comment status updated successfully',
+                'payload': serializer.data
+            }
+            return Response(data=resp, status=status.HTTP_200_OK)
+
+        except Comment.DoesNotExist:
+            resp = {
+                'status': 'false',
+                'message': 'Comment not found',
+                'payload': {}
+            }
+            return Response(data=resp, status=status.HTTP_404_NOT_FOUND)
