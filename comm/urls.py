@@ -25,7 +25,7 @@ urlpatterns = [
     path('api-auth/', include('rest_framework.urls')),
 
     # Domain URLs
-    path("api/v1/comment/", include("app.comment.api.urls"), name="comment"),
+    path("api/v1/comments/", include("app.comment.api.urls"), name="comment"),
 ]
 
 if settings.DEBUG:

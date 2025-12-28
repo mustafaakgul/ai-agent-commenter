@@ -107,3 +107,29 @@ class UpdateAnsweredCommentsAPIView(APIView):
                 'payload': {}
             }
             return Response(data=resp, status=status.HTTP_404_NOT_FOUND)
+
+
+class CommentsByStatusAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, *args, **kwargs):
+        comment_status = request.query_params.get('status')
+
+        if not comment_status:
+            resp = {
+                'status': 'false',
+                'message': 'Status parameter is required',
+                'payload': {}
+            }
+            return Response(data=resp, status=status.HTTP_400_BAD_REQUEST)
+
+        query = Comment.objects.filter(status=comment_status)
+        serializer = CommentListSerializer(query, many=True)
+
+        resp = {
+            'status': 'true',
+            'message': 'successful',
+            'payload': serializer.data
+        }
+        response = Response(data=resp, status=status.HTTP_200_OK)
+        return response
