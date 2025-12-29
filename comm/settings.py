@@ -43,11 +43,12 @@ INSTALLED_APPS = [
     'app.comment',
 
     # 3rd Party Apps
-    # 'corsheaders',
+    'corsheaders',
     'rest_framework',
 ]
 
 MIDDLEWARE = [
+    # Django Built-in Middlewares
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -55,6 +56,9 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+
+    # 3rd Party Middlewares
+    'corsheaders.middleware.CorsMiddleware',
 ]
 
 ROOT_URLCONF = 'comm.urls'
@@ -137,7 +141,7 @@ REST_FRAMEWORK = {
     # }
 }
 
-
+CORS_ORIGIN_ALLOW_ALL = True
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
