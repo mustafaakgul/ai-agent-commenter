@@ -5,7 +5,7 @@
 # General Configs
 .env
 .idea/*
-db.sqlite3
+# db.sqlite3
 
 # User-specific stuff
 .idea/**/workspace.xml
