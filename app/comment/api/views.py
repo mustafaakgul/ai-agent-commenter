@@ -117,3 +117,48 @@ class UpdateAnsweredCommentsAPIView(APIView):
                 'payload': {}
             }
             return Response(data=resp, status=status.HTTP_404_NOT_FOUND)
+
+
+class ApproveCommentAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        comment_id = request.data.get('id')
+
+        if not comment_id:
+            resp = {
+                'status': 'false',
+                'message': 'Comment ID is required',
+                'payload': {}
+            }
+            return Response(data=resp, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            comment = Comment.objects.get(id=comment_id)
+
+            if comment.status != 'WAITING_FOR_APPROVE':
+                resp = {
+                    'status': 'false',
+                    'message': f'Comment status must be WAITING_FOR_APPROVE. Current status: {comment.status}',
+                    'payload': {}
+                }
+                return Response(data=resp, status=status.HTTP_400_BAD_REQUEST)
+
+            comment.status = 'APPROVED'
+            comment.save()
+
+            serializer = CommentListSerializer(comment)
+            resp = {
+                'status': 'true',
+                'message': 'Comment approved successfully',
+                'payload': serializer.data
+            }
+            return Response(data=resp, status=status.HTTP_200_OK)
+
+        except Comment.DoesNotExist:
+            resp = {
+                'status': 'false',
+                'message': 'Comment not found',
+                'payload': {}
+            }
+            return Response(data=resp, status=status.HTTP_404_NOT_FOUND)
