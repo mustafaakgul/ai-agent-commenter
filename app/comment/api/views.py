@@ -124,6 +124,7 @@ class ApproveCommentAPIView(APIView):
 
     def post(self, request, *args, **kwargs):
         comment_id = request.data.get('id')
+        comment_response = request.data.get('response')  # Optional response update
 
         if not comment_id:
             resp = {
@@ -136,6 +137,7 @@ class ApproveCommentAPIView(APIView):
         try:
             comment = Comment.objects.get(id=comment_id)
 
+            # Check if comment is in WAITING_FOR_APPROVE status
             if comment.status != 'WAITING_FOR_APPROVE':
                 resp = {
                     'status': 'false',
@@ -144,7 +146,13 @@ class ApproveCommentAPIView(APIView):
                 }
                 return Response(data=resp, status=status.HTTP_400_BAD_REQUEST)
 
+            # Update status to APPROVED
             comment.status = 'APPROVED'
+
+            # Update response if provided
+            if comment_response:
+                comment.response = comment_response
+
             comment.save()
 
             serializer = CommentListSerializer(comment)
