@@ -3,7 +3,7 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from app.comment.api.serializers import CommentCreateSerializer, CommentListSerializer
+from app.comment.api.serializers import CommentCreateSerializer, CommentListSerializer, CommentDetailSerializer
 from app.comment.models import Comment
 from integrations.ai.agents.agent_comment.langchain import creator
 
@@ -159,6 +159,31 @@ class ApproveCommentAPIView(APIView):
             resp = {
                 'status': 'true',
                 'message': 'Comment approved successfully',
+                'payload': serializer.data
+            }
+            return Response(data=resp, status=status.HTTP_200_OK)
+
+        except Comment.DoesNotExist:
+            resp = {
+                'status': 'false',
+                'message': 'Comment not found',
+                'payload': {}
+            }
+            return Response(data=resp, status=status.HTTP_404_NOT_FOUND)
+
+
+class CommentDetailAPIView(APIView):
+    permission_classes = [AllowAny]
+
+    def get(self, request, comment_id, *args, **kwargs):
+        try:
+            # Prefetch related objects for optimization
+            comment = Comment.objects.prefetch_related('analyzers', 'quality_score').get(id=comment_id)
+
+            serializer = CommentDetailSerializer(comment)
+            resp = {
+                'status': 'true',
+                'message': 'Comment details retrieved successfully',
                 'payload': serializer.data
             }
             return Response(data=resp, status=status.HTTP_200_OK)
