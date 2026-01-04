@@ -40,7 +40,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     # Domain Apps
-    'app.comment',
+    'app.comments',
 
     # 3rd Party Apps
     'corsheaders',

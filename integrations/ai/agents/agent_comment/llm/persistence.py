@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import List, Dict
-from app.comment.models import Comment, CommentAnalyzer, CommentQualityScore
+from app.comments.models import Comment, CommentAnalyzer, CommentQualityScore
 
 # Persistence function for saving results to the database
 def save_results(id: int, results: List[Dict]):

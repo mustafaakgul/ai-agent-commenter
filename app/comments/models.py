@@ -1,6 +1,6 @@
 from django.db import models
 
-from app.comment.enums import AGENT_STATUS
+from app.comments.enums import AGENT_STATUS
 from app.core.models.base_model import BaseModel
 
 

@@ -1,5 +1,5 @@
 from django.urls import path
-from app.comment.api.views import (
+from app.comments.api.views import (
     CommentAPIView,
     UpdateAnsweredCommentsAPIView,
     CommentsByStatusAPIView,
@@ -8,7 +8,7 @@ from app.comment.api.views import (
 )
 
 
-app_name = 'comment'
+app_name = 'comments'
 
 
 urlpatterns = [

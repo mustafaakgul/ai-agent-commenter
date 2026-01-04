@@ -2,10 +2,10 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from app.comment.models import Comment
+from app.comments.models import Comment
 
 
-# cd {PROJECT_PATH}/aia/comm && python manage.py test app.comment.tests.CommentsByStatusAPIViewTestCase
+# cd {PROJECT_PATH}/aia/comm && python manage.py test app.comments.tests.CommentsByStatusAPIViewTestCase
 class CommentsByStatusAPIViewTestCase(APITestCase):
     """
     Test cases for CommentsByStatusAPIView endpoint

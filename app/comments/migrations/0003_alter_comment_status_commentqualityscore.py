@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('comment', '0002_alter_comment_response_commentanalyzer'),
+        ('comments', '0002_alter_comment_response_commentanalyzer'),
     ]
 
     operations = [

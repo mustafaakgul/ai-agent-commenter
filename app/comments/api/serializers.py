@@ -1,6 +1,6 @@
 from rest_framework.serializers import ModelSerializer
 
-from app.comment.models import Comment, CommentAnalyzer, CommentQualityScore
+from app.comments.models import Comment, CommentAnalyzer, CommentQualityScore
 
 
 class CommentAnalyzerSerializer(ModelSerializer):

@@ -3,8 +3,8 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from app.comment.api.serializers import CommentCreateSerializer, CommentListSerializer, CommentDetailSerializer
-from app.comment.models import Comment
+from app.comments.api.serializers import CommentCreateSerializer, CommentListSerializer, CommentDetailSerializer
+from app.comments.models import Comment
 from integrations.ai.agents.agent_comment.langchain import creator
 
 
