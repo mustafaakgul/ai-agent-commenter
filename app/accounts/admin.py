@@ -48,7 +48,7 @@ class EmailVerificationAdmin(admin.ModelAdmin):
     list_filter = ['is_used', 'created', 'expires_at']
     search_fields = ['user__email', 'token']
     raw_id_fields = ['user']
-    readonly_fields = ['token', 'created', 'modified']
+    readonly_fields = ['token', 'created', 'updated']
 
 
 @admin.register(PasswordResetToken)
@@ -57,7 +57,7 @@ class PasswordResetTokenAdmin(admin.ModelAdmin):
     list_filter = ['is_used', 'created', 'expires_at']
     search_fields = ['user__email', 'token']
     raw_id_fields = ['user']
-    readonly_fields = ['token', 'created', 'modified']
+    readonly_fields = ['token', 'created', 'updated']
 
 
 @admin.register(UserActivity)
@@ -66,7 +66,7 @@ class UserActivityAdmin(admin.ModelAdmin):
     list_filter = ['activity_type', 'created']
     search_fields = ['user__email', 'activity_type', 'ip_address', 'description']
     raw_id_fields = ['user']
-    readonly_fields = ['created', 'modified']
+    readonly_fields = ['created', 'updated']
 
     def has_add_permission(self, request):
         return False
