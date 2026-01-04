@@ -33,8 +33,8 @@ class RegisterAPIView(APIView):
         if serializer.is_valid():
             user = serializer.save()
 
-            # Create user profile
-            UserProfile.objects.create(user=user)
+            # UserProfile is automatically created by signals
+            # UserProfile.objects.create(user=user)
 
             # Create email verification token
             token = secrets.token_urlsafe(32)
