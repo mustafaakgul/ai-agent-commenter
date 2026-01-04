@@ -26,6 +26,7 @@ urlpatterns = [
 
     # Domain URLs
     path("api/v1/comments/", include("app.comments.api.urls"), name="comments"),
+    path("api/v1/accounts/", include("app.accounts.api.urls"), name="accounts"),
 ]
 
 if settings.DEBUG:
